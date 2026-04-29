@@ -1,64 +1,80 @@
 # Network Config Manual
 
-Minimal single-page web app for documenting an enterprise network configuration manual. The project is designed as an Infrastructure-as-Code style runbook: topology, hardware inventory, VLAN/IP plan, firewall policy, VPN settings, virtualization notes, and copyable CLI snippets live together in one deployable static page.
+> A minimal Infrastructure-as-Code inspired portal for turning complex network topology and device configuration into an interactive, searchable operations manual.
+
+[![Vercel Deployment Status](https://img.shields.io/badge/Vercel-Live-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://network-configuration-guide.vercel.app)
+[![MIT License](https://img.shields.io/badge/License-MIT-0f172a?style=for-the-badge)](#license)
+[![Made with Next.js & Tailwind CSS](https://img.shields.io/badge/Made%20with-Next.js%20%26%20Tailwind%20CSS-111827?style=for-the-badge&logo=nextdotjs&logoColor=white)](#tech-stack)
+[![Mermaid.js](https://img.shields.io/badge/Topology-Mermaid.js-ff3670?style=for-the-badge&logo=mermaid&logoColor=white)](#key-features)
 
 ![Network Config Manual preview](assets/preview.png)
 
-## Status
+## 🚀 Live Demo
 
-- Phase 1-5 complete
-- Visual style aligned with `it-for-me` and `it-asset-tracker`
-- Ready for GitHub and Vercel static deployment
+| Environment | URL |
+| --- | --- |
+| Production | [network-configuration-guide.vercel.app](https://network-configuration-guide.vercel.app) |
 
-## Tech Stack
+## 📌 Overview
 
-- HTML single-file SPA
-- Tailwind CSS via CDN
-- Mermaid.js for dynamic topology diagrams
-- Lucide icons via CDN
-- Vanilla JavaScript for dark mode, Mermaid refresh, and click-to-copy
+Network Config Manual is a clean, single-page documentation portal for operations teams that need one reliable place to inspect network topology, hardware specs, VLAN/IP planning, firewall policy, VPN settings, server notes, and reusable configuration snippets.
 
-## Features
+Instead of keeping diagrams, CLI commands, and handover notes in separate files, this project treats documentation like lightweight Infrastructure-as-Code: structured, versioned, reviewable, and easy to update.
 
-- Interactive Mermaid topology: ISP -> Router -> Firewall -> Core Switch -> Virtual Servers
-- Sticky table of contents on desktop
-- Dark and light mode toggle
-- Hardware, VLAN, and IP plan tables
-- Copy buttons for every configuration snippet
-- Maintenance log and rollback checklist
-- Semantic HTML structure for search and documentation browsing
+## ✨ Key Features
 
-## Local Usage
+| Area | Capability |
+| --- | --- |
+| Interactive Topology | Dynamic SVG rendering powered by Mermaid.js for the ISP -> Router -> Firewall -> Core Switch -> Virtual Servers path |
+| Config Snippets | Click-to-copy command blocks for router, firewall, switch, VPN, and server configuration workflows |
+| Specs Dashboard | Hardware, VLAN, IP plan, and management address tables built for quick scanning |
+| Responsive UI | Minimal desktop, tablet, and mobile layout with horizontal diagram scrolling for small screens |
+| Operations Notes | Maintenance log, verification checklist, and rollback guidance for future network changes |
+
+## 🧱 Tech Stack
+
+| Technology | Role |
+| --- | --- |
+| Next.js | Portfolio-aligned deployment target and future upgrade path |
+| Tailwind CSS | Minimal responsive UI styling |
+| Lucide React / Lucide Icons | Clean icon system for actions and controls |
+| Mermaid.js | Dynamic network topology rendering |
+| Vercel | Static hosting and live demo deployment |
+
+> Current implementation note: this version is intentionally shipped as a static `index.html` SPA for fast deployment. The structure is ready to migrate into a Next.js App Router project if the manual grows into a larger system.
+
+## ⚙️ Installation & Usage
+
+Clone the repository:
 
 ```powershell
+git clone https://github.com/nattapongsindhu/network-configuration-guide.git
 cd network-configuration-guide
+```
+
+Run locally:
+
+```powershell
 python -m http.server 8085 --directory .
 ```
 
-Open:
+Open the local app:
 
 ```text
 http://localhost:8085/
 ```
 
-## Vercel Deployment
+## 🛠️ Updating Network Data
 
-This project does not require a build step.
+| Update Target | Where to Edit |
+| --- | --- |
+| Hardware specs | `Prerequisites & Hardware Specs` table in `index.html` |
+| Network diagram | `#diagramSource` and `data-mermaid-source` in `index.html` |
+| VLAN/IP plan | `Core Switch` table in `index.html` |
+| CLI snippets | Add or edit `<article class="snippet">` blocks |
+| Screenshot preview | Replace `assets/preview.png` |
 
-1. Create a GitHub repository named `network-config-manual`.
-2. Push `index.html`, `README.md`, and `assets/preview.png`.
-3. Import the repository in Vercel.
-4. Keep the framework preset as `Other` or static.
-5. Deploy from the repository root.
-
-Vercel will serve `index.html` automatically as the main page.
-
-## Updating Network Data
-
-1. Update the hardware table in the `Prerequisites & Hardware Specs` section.
-2. Update the Mermaid topology in `#diagramSource` and the `data-mermaid-source` attribute.
-3. Update the VLAN/IP plan in the `Core Switch` table.
-4. Add new command snippets with this pattern:
+Snippet template:
 
 ```html
 <article class="snippet" data-title="Name">
@@ -72,18 +88,37 @@ Vercel will serve `index.html` automatically as the main page.
 </article>
 ```
 
-## Verification Checklist
+## 📝 Maintenance Log Template
 
-- Mermaid diagram renders without syntax errors.
-- Every Copy button targets an existing snippet.
-- Live Copy interaction works in the browser clipboard.
-- TOC links scroll to the correct section.
-- The diagram container supports horizontal overflow on small screens.
-- The page uses semantic `<main>`, `<section>`, `<nav>`, and table markup.
-- Back up FortiGate and Ruijie startup configurations before applying real network changes.
+| Date | Change Summary | Device / Scope | Owner | Verification | Rollback Plan |
+| --- | --- | --- | --- | --- | --- |
+| YYYY-MM-DD |  |  |  |  |  |
+| YYYY-MM-DD |  |  |  |  |  |
+| YYYY-MM-DD |  |  |  |  |  |
 
-## Project Log
+## ✅ Verification Checklist
 
-- Status: Phase 1-5 complete
-- Visual style: clean internal-tool layout inspired by `it-for-me` and `it-asset-tracker`
-- Next step: create GitHub repository and connect it to Vercel
+| Check | Status |
+| --- | --- |
+| Mermaid diagram renders without syntax errors | Complete |
+| Copy buttons target valid snippets | Complete |
+| Browser clipboard copy works on tested snippets | Complete |
+| Sticky table of contents links route to valid sections | Complete |
+| Diagram remains usable on mobile through horizontal overflow | Complete |
+| Semantic HTML uses `main`, `section`, `nav`, and table markup | Complete |
+
+## 🚢 Deployment Notes
+
+This project does not require a build step. Vercel can serve `index.html` directly from the repository root.
+
+Recommended flow:
+
+```powershell
+git add README.md
+git commit -m "docs: update README with professional badges and structure"
+git push origin main
+```
+
+## 📄 License
+
+MIT License
