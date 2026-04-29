@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Network Config Manual for NTU Router, FortiGate FG-81E, Ruijie RG-S2910, VLAN, LAG, VPN, and HPE DL360 virtualization host">
+  <meta name="theme-color" content="#0f172a">
+  <title>Network Config Manual | Enterprise IT</title>
+  <script>tailwind = { config: { darkMode: 'class' } };</script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: document.documentElement.classList.contains('dark') ? 'dark' : 'base',
+      securityLevel: 'loose',
+      flowchart: { curve: 'basis', htmlLabels: true }
+    });
+    window.refreshMermaid = async function refreshMermaid() {
+      document.querySelectorAll('[data-mermaid-source]').forEach((el) => {
+        el.removeAttribute('data-processed');
+        el.textContent = el.dataset.mermaidSource;
+      });
+      await mermaid.run({ querySelector: '.mermaid' });
+    };
+    window.addEventListener('DOMContentLoaded', () => window.refreshMermaid());
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #f4f1ea;
+      --panel: #ffffff;
+      --shell: #0f172a;
+      --line: #d9dee7;
+    }
+    .dark { color-scheme: dark; }
+    body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    pre { tab-size: 2; }
+    .panel { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04); }
+    .dark .panel { --panel: #111827; --line: #1f2937; }
+    .eyebrow { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: #64748b; }
+    .dark .eyebrow { color: #94a3b8; }
+    @media print {
+      aside, .no-print, button { display: none !important; }
+      main { max-width: none !important; }
+      section { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body class="bg-[#f4f1ea] text-slate-950 antialiased dark:bg-slate-950 dark:text-slate-100">
+  <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90 lg:hidden">
+    <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+      <a href="#top" class="flex items-center gap-3 font-semibold tracking-tight">
+        <span class="grid h-9 w-9 place-items-center rounded bg-cyan-600 text-white shadow-sm shadow-cyan-600/20">N</span>
+        <span>
+          <span class="block text-sm text-slate-500 dark:text-slate-400">Enterprise IT</span>
+          <span class="block">Network Config Manual</span>
+        </span>
+      </a>
+      <div class="flex items-center gap-2">
+        <button id="expandAll" class="no-print inline-flex h-9 items-center gap-2 rounded border border-slate-200 px-3 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800" type="button">
+          <i data-lucide="list-tree" class="h-4 w-4"></i>
+          <span class="hidden sm:inline">Open sections</span>
+        </button>
+        <button id="themeToggle" class="no-print grid h-9 w-9 place-items-center rounded border border-slate-200 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800" type="button" aria-label="Toggle dark mode">
+          <i data-lucide="moon" class="h-4 w-4 dark:hidden"></i>
+          <i data-lucide="sun" class="hidden h-4 w-4 dark:block"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div id="top" class="grid min-h-screen grid-cols-1 lg:grid-cols-[280px_1fr]">
+    <aside class="hidden border-r border-slate-800 bg-slate-950 text-white lg:block">
+      <div class="sticky top-0 p-5">
+        <div class="rounded-lg border border-slate-800 bg-slate-900/70 p-5">
+          <p class="eyebrow text-slate-500">Infrastructure Manual</p>
+          <h1 class="mt-3 text-2xl font-semibold tracking-tight">Network Config</h1>
+          <p class="mt-3 text-sm leading-6 text-slate-300">Minimal runbook for topology, VLANs, firewall policy, VPN, and virtualization operations.</p>
+        </div>
+        <div class="mt-4 rounded-lg border border-slate-800 bg-slate-900/60 p-5">
+          <p class="eyebrow text-slate-500">Current Scope</p>
+          <p class="mt-2 text-sm font-semibold">FG-81E + RG-S2910 + HPE DL360</p>
+          <p class="mt-2 text-sm leading-6 text-slate-400">IaC-style snippets with copy actions and verification notes.</p>
+        </div>
+      <nav class="mt-4 text-sm" aria-label="Table of contents">
+        <p class="mb-3 px-3 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-slate-500">Table of Contents</p>
+        <ol class="space-y-2">
+          <li><a class="toc-link" href="#overview">0. Overview & Diagram</a></li>
+          <li><a class="toc-link" href="#prerequisites">1. Prerequisites & Hardware</a></li>
+          <li><a class="toc-link" href="#router">2. Gateway / Router</a></li>
+          <li><a class="toc-link" href="#firewall">3. Firewall Rules & VPN</a></li>
+          <li><a class="toc-link" href="#switch">4. Core Switch VLAN/LAG</a></li>
+          <li><a class="toc-link" href="#virtualization">5. Virtualization Host</a></li>
+          <li><a class="toc-link" href="#maintenance">6. Maintenance Log</a></li>
+          <li><a class="toc-link" href="#ops">7. Backup / Verify</a></li>
+        </ol>
+      </nav>
+      </div>
+    </aside>
+
+    <main class="min-w-0 space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <section class="panel overflow-hidden">
+        <div class="border-b border-slate-200 p-6 dark:border-slate-800 sm:p-8">
+          <div class="mb-5 flex flex-wrap gap-2">
+            <span class="rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold text-cyan-800 dark:border-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">FortiOS 6.4+</span>
+            <span class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">Ruijie RGOS</span>
+            <span class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">VMware ESXi 6/7</span>
+            <span class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">7 VLANs</span>
+            <span class="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">SSL VPN</span>
+          </div>
+          <p class="eyebrow">Network Operations</p>
+          <h1 class="mt-3 max-w-3xl text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">Production Network Configuration Manual</h1>
+          <p class="mt-4 max-w-3xl text-base leading-7 text-slate-600 dark:text-slate-300">
+            A single-page runbook for infrastructure teams configuring the NTU/Router, FortiGate FG-81E, Ruijie RG-S2910 Core Switch, VLAN/IP plan, LAG trunk, SSL VPN, and HPE DL360 virtualization host.
+          </p>
+        </div>
+        <div class="grid gap-0 border-b border-slate-200 dark:border-slate-800 md:grid-cols-4">
+          <div class="border-b border-slate-200 p-5 dark:border-slate-800 md:border-b-0 md:border-r">
+            <p class="text-sm text-slate-500">Firewall</p>
+            <p class="mt-1 text-xl font-semibold">FortiGate FG-81E</p>
+          </div>
+          <div class="border-b border-slate-200 p-5 dark:border-slate-800 md:border-b-0 md:border-r">
+            <p class="text-sm text-slate-500">Core Switch</p>
+            <p class="mt-1 text-xl font-semibold">Ruijie RG-S2910</p>
+          </div>
+          <div class="border-b border-slate-200 p-5 dark:border-slate-800 md:border-b-0 md:border-r">
+            <p class="text-sm text-slate-500">Gateway VLAN</p>
+            <p class="mt-1 text-xl font-semibold">192.168.5.254</p>
+          </div>
+          <div class="p-5">
+            <p class="text-sm text-slate-500">WAN Mode</p>
+            <p class="mt-1 text-xl font-semibold">PPPoE / Dynamic IP</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="overview" class="panel p-5 sm:p-6">
+        <div class="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <p class="eyebrow">/spec</p>
+            <h2 class="mt-1 text-2xl font-bold">Interactive Network Diagram</h2>
+            <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Mermaid diagram showing the path from ISP -> Router -> Firewall -> Core Switch -> Servers, including the reference IP and VLAN plan.</p>
+          </div>
+          <button class="copy-btn no-print inline-flex h-9 items-center gap-2 rounded border border-slate-200 px-3 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800" data-copy-target="diagramSource" type="button">
+            <i data-lucide="copy" class="h-4 w-4"></i><span>Copy</span>
+          </button>
+        </div>
+        <div class="overflow-x-auto rounded border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
+          <pre id="diagramSource" class="hidden">flowchart TD
+  ISP[NT ISP FTTx Dynamic IP]
+  ROUTER[NTU Router 192.168.1.1]
+  PHONE[Telephone FAX]
+  FW[FortiGate FG-81E WAN1 192.168.1.254]
+  CORE[Ruijie Core Switch VLAN5 GW 192.168.5.254]
+  ESXI[HPE DL360 Gen8 Virtual Host]
+  VMS[Virtual Servers]
+  USERS[Client VLANs 10 20 30 40 90 100]
+  ILO[iLO Management 192.168.5.10]
+
+  ISP --> ROUTER
+  ROUTER --> PHONE
+  ROUTER --> FW
+  FW --> CORE
+  CORE --> ESXI
+  ESXI --> VMS
+  CORE --> USERS
+  CORE --> ILO</pre>
+          <div class="mermaid min-w-[780px]" data-mermaid-source="flowchart TD
+  ISP[NT ISP FTTx Dynamic IP]
+  ROUTER[NTU Router 192.168.1.1]
+  PHONE[Telephone FAX]
+  FW[FortiGate FG-81E WAN1 192.168.1.254]
+  CORE[Ruijie Core Switch VLAN5 GW 192.168.5.254]
+  ESXI[HPE DL360 Gen8 Virtual Host]
+  VMS[Virtual Servers]
+  USERS[Client VLANs 10 20 30 40 90 100]
+  ILO[iLO Management 192.168.5.10]
+
+  ISP --&gt; ROUTER
+  ROUTER --&gt; PHONE
+  ROUTER --&gt; FW
+  FW --&gt; CORE
+  CORE --&gt; ESXI
+  ESXI --&gt; VMS
+  CORE --&gt; USERS
+  CORE --&gt; ILO"></div>
+        </div>
+      </section>
+
+      <section id="prerequisites" class="panel p-5 sm:p-6">
+        <p class="eyebrow">/plan</p>
+        <h2 class="mt-1 text-2xl font-bold">Prerequisites & Hardware Specs</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Prepare the serial console, engineer notebook, management IP plan, and configuration backups before changing the topology.</p>
+        <div class="mt-5 overflow-x-auto">
+          <table class="w-full min-w-[720px] border-collapse text-left text-sm">
+            <thead>
+              <tr class="border-b border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
+                <th class="px-4 py-3 font-semibold">Layer</th>
+                <th class="px-4 py-3 font-semibold">Model / Spec</th>
+                <th class="px-4 py-3 font-semibold">Management IP</th>
+                <th class="px-4 py-3 font-semibold">Role</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+              <tr><td class="px-4 py-3">Internet</td><td class="px-4 py-3">NT ISP FTTx + DynDNS</td><td class="px-4 py-3">Dynamic Public IP</td><td class="px-4 py-3">PPPoE uplink</td></tr>
+              <tr><td class="px-4 py-3">Edge</td><td class="px-4 py-3">NTU + Wireless Router</td><td class="px-4 py-3">192.168.1.1</td><td class="px-4 py-3">Bridge/router, port forward to firewall</td></tr>
+              <tr><td class="px-4 py-3">Firewall</td><td class="px-4 py-3">FortiGate FG-81E</td><td class="px-4 py-3">192.168.1.254 / 192.168.5.1</td><td class="px-4 py-3">NGFW, NAT, SSL VPN, policy control</td></tr>
+              <tr><td class="px-4 py-3">Core</td><td class="px-4 py-3">Ruijie RG-S2910-24GT4SFP-UP-H</td><td class="px-4 py-3">192.168.5.254</td><td class="px-4 py-3">L3 switching, DHCP, VLAN gateway</td></tr>
+              <tr><td class="px-4 py-3">Server</td><td class="px-4 py-3">HPE ProLiant DL360 Gen 8</td><td class="px-4 py-3">iLO 192.168.5.10</td><td class="px-4 py-3">Virtualization host (ESXi/Proxmox)</td></tr>
+              <tr><td class="px-4 py-3">Cabling</td><td class="px-4 py-3">Cat6 UTP x 8+, RJ45-to-Serial</td><td class="px-4 py-3">N/A</td><td class="px-4 py-3">Console + trunk links</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 class="mt-8 border-l-4 border-cyan-500 pl-3 text-lg font-semibold">Data Schema for Config Snippets</h3>
+        <pre class="mt-3 overflow-x-auto rounded border border-slate-200 bg-slate-950 p-4 text-sm text-slate-100 dark:border-slate-800"><code>{
+  "id": "switch-vlan-create",
+  "title": "Create VLANs",
+  "device": "Ruijie RG-S2910",
+  "os": "RGOS",
+  "risk": "medium",
+  "rollback": "no vlan &lt;id&gt;",
+  "commands": ["vlan 5", "name MGMT", "exit"]
+}</code></pre>
+      </section>
+
+      <section id="router" class="manual-section panel p-5 sm:p-6">
+        <h2 class="text-2xl font-bold">Gateway / Router Config</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Configure the NTU/Router to receive PPPoE from the ISP and hand off traffic to FortiGate through the WAN segment.</p>
+        <div class="mt-5 grid gap-4 md:grid-cols-2">
+          <div class="rounded border border-slate-200 p-4 dark:border-slate-800">
+            <h3 class="font-semibold">WAN PPPoE</h3>
+            <ul class="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+              <li>Mode: PPPoE / Dynamic Public IP</li>
+              <li>LAN IP: 192.168.1.1/24</li>
+              <li>Port forward / DMZ target: 192.168.1.254</li>
+            </ul>
+          </div>
+          <div class="rounded border border-slate-200 p-4 dark:border-slate-800">
+            <h3 class="font-semibold">Static Route</h3>
+            <ul class="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+              <li>Route internal VLANs back to FortiGate/Core as required</li>
+              <li>Disable duplicate DHCP scope on the router if the Core Switch owns DHCP</li>
+            </ul>
+          </div>
+        </div>
+        <article class="snippet mt-5" data-title="Router Checklist">
+          <div class="snippet-head"><span>ROUTER CHECKLIST</span><button class="copy-btn" data-copy-target="router-snippet" type="button"><i data-lucide="copy"></i>Copy</button></div>
+          <pre id="router-snippet"><code>1. Login NTU/Router: http://192.168.1.1
+2. Set WAN mode: PPPoE
+3. Confirm public/DynDNS status from ISP
+4. Set LAN IP: 192.168.1.1/24
+5. Forward required ports or DMZ to FortiGate WAN: 192.168.1.254
+6. Disable router DHCP if Core Switch provides DHCP
+7. Save config and reboot during the maintenance window</code></pre>
+        </article>
+      </section>
+
+      <section id="firewall" class="manual-section panel p-5 sm:p-6">
+        <h2 class="text-2xl font-bold">Firewall Rules & VPN</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">FortiGate provides NGFW inspection, NAT, remote access SSL VPN, and policy control between WAN, LAN, and VPN zones.</p>
+        <div class="mt-5 grid gap-5">
+          <article class="snippet" data-title="FortiGate Interfaces">
+            <div class="snippet-head"><span>FORTIGATE CLI</span><button class="copy-btn" data-copy-target="fg-interface" type="button"><i data-lucide="copy"></i>Copy</button></div>
+            <pre id="fg-interface"><code>config system interface
+    edit "wan1"
+        set mode static
+        set ip 192.168.1.254 255.255.255.0
+        set allowaccess ping https ssh
+        set alias "NTU handoff"
+    next
+    edit "lan"
+        set ip 192.168.5.1 255.255.255.0
+        set allowaccess ping https ssh fabric
+        set alias "Core switch transit"
+    next
+end
+
+config router static
+    edit 1
+        set gateway 192.168.1.1
+        set device "wan1"
+    next
+    edit 2
+        set dst 192.168.0.0 255.255.0.0
+        set gateway 192.168.5.254
+        set device "lan"
+    next
+end</code></pre>
+          </article>
+          <article class="snippet" data-title="SSL VPN">
+            <div class="snippet-head"><span>FORTIGATE CLI</span><button class="copy-btn" data-copy-target="fg-vpn" type="button"><i data-lucide="copy"></i>Copy</button></div>
+            <pre id="fg-vpn"><code>config vpn ssl settings
+    set servercert "Fortinet_Factory"
+    set tunnel-ip-pools "SSLVPN_TUNNEL_ADDR1"
+    set source-interface "wan1"
+    set source-address "all"
+    set default-portal "full-access"
+    set port 10443
+    config authentication-rule
+        edit 1
+            set groups "VPN_USERS"
+            set portal "full-access"
+        next
+    end
+end</code></pre>
+          </article>
+          <article class="snippet" data-title="WAN to SSLVPN Policy">
+            <div class="snippet-head"><span>FORTIGATE CLI</span><button class="copy-btn" data-copy-target="fg-policy" type="button"><i data-lucide="copy"></i>Copy</button></div>
+            <pre id="fg-policy"><code>config firewall policy
+    edit 0
+        set name "SSLVPN_to_LAN"
+        set srcintf "ssl.root"
+        set dstintf "lan"
+        set srcaddr "SSLVPN_TUNNEL_ADDR1"
+        set dstaddr "all"
+        set action accept
+        set schedule "always"
+        set service "ALL"
+        set nat disable
+    next
+end</code></pre>
+          </article>
+        </div>
+      </section>
+
+      <section id="switch" class="manual-section panel p-5 sm:p-6">
+        <h2 class="text-2xl font-bold">Core Switch: VLANs, LAG, Trunk</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">The Ruijie Core Switch acts as the L3 gateway, DHCP service point, and aggregation layer for FortiGate and server uplinks.</p>
+        <div class="mt-5 overflow-x-auto">
+          <table class="w-full min-w-[700px] text-left text-sm">
+            <thead>
+              <tr class="border-b border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-950">
+                <th class="px-4 py-3">VLAN</th><th class="px-4 py-3">Name</th><th class="px-4 py-3">Subnet</th><th class="px-4 py-3">Gateway</th><th class="px-4 py-3">Purpose</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+              <tr><td class="px-4 py-3">5</td><td class="px-4 py-3">MGMT</td><td class="px-4 py-3">192.168.5.0/24</td><td class="px-4 py-3">192.168.5.254</td><td class="px-4 py-3">Network management</td></tr>
+              <tr><td class="px-4 py-3">10</td><td class="px-4 py-3">OFFICE</td><td class="px-4 py-3">192.168.10.0/23</td><td class="px-4 py-3">192.168.10.254</td><td class="px-4 py-3">Office users</td></tr>
+              <tr><td class="px-4 py-3">20</td><td class="px-4 py-3">HR_FIN</td><td class="px-4 py-3">192.168.20.0/24</td><td class="px-4 py-3">192.168.20.254</td><td class="px-4 py-3">HR/Finance</td></tr>
+              <tr><td class="px-4 py-3">30</td><td class="px-4 py-3">SERVERS</td><td class="px-4 py-3">192.168.30.0/24</td><td class="px-4 py-3">192.168.30.254</td><td class="px-4 py-3">Virtual server network</td></tr>
+              <tr><td class="px-4 py-3">40</td><td class="px-4 py-3">WIFI_GUEST</td><td class="px-4 py-3">192.168.40.0/23</td><td class="px-4 py-3">192.168.40.254</td><td class="px-4 py-3">Guest Wi-Fi</td></tr>
+              <tr><td class="px-4 py-3">90</td><td class="px-4 py-3">IOT_CCTV</td><td class="px-4 py-3">192.168.90.0/23</td><td class="px-4 py-3">192.168.90.254</td><td class="px-4 py-3">Camera/IoT</td></tr>
+              <tr><td class="px-4 py-3">100</td><td class="px-4 py-3">DMZ</td><td class="px-4 py-3">192.168.100.0/24</td><td class="px-4 py-3">192.168.100.254</td><td class="px-4 py-3">Public-facing services</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-6 grid gap-5">
+          <article class="snippet" data-title="Create VLANs">
+            <div class="snippet-head"><span>RUIJIE CLI</span><button class="copy-btn" data-copy-target="sw-vlans" type="button"><i data-lucide="copy"></i>Copy</button></div>
+            <pre id="sw-vlans"><code>configure terminal
+vlan 5
+ name MGMT
+ exit
+vlan 10
+ name OFFICE
+ exit
+vlan 20
+ name HR_FIN
+ exit
+vlan 30
+ name SERVERS
+ exit
+vlan 40
+ name WIFI_GUEST
+ exit
+vlan 90
+ name IOT_CCTV
+ exit
+vlan 100
+ name DMZ
+ exit
+show vlan brief</code></pre>
+          </article>
+          <article class="snippet" data-title="SVI and DHCP">
+            <div class="snippet-head"><span>RUIJIE CLI</span><button class="copy-btn" data-copy-target="sw-svi" type="button"><i data-lucide="copy"></i>Copy</button></div>
+            <pre id="sw-svi"><code>configure terminal
+interface vlan 5
+ ip address 192.168.5.254 255.255.255.0
+ no shutdown
+ exit
+interface vlan 10
+ ip address 192.168.10.254 255.255.254.0
+ no shutdown
+ exit
+interface vlan 20
+ ip address 192.168.20.254 255.255.255.0
+ no shutdown
+ exit
+interface vlan 30
+ ip address 192.168.30.254 255.255.255.0
+ no shutdown
+ exit
+ip route 0.0.0.0 0.0.0.0 192.168.5.1</code></pre>
+          </article>
+          <article class="snippet" data-title="LAG Trunk to Firewall">
+            <div class="snippet-head"><span>RUIJIE CLI</span><button class="copy-btn" data-copy-target="sw-lag-fw" type="button"><i data-lucide="copy"></i>Copy</button></div>
+            <pre id="sw-lag-fw"><code>configure terminal
+interface range gigabitEthernet 0/21-24
+ port-group 1 mode active
+ exit
+interface aggregateport 1
+ description LAG_TO_FORTIGATE
+ switchport mode trunk
+ switchport trunk native vlan 5
+ switchport trunk allowed vlan only 5,10,20,30,40,90,100
+ exit
+show interfaces aggregateport 1 switchport</code></pre>
+          </article>
+          <article class="snippet" data-title="LAG Trunk to ESXi Host">
+            <div class="snippet-head"><span>RUIJIE CLI</span><button class="copy-btn" data-copy-target="sw-lag-server" type="button"><i data-lucide="copy"></i>Copy</button></div>
+            <pre id="sw-lag-server"><code>configure terminal
+interface range gigabitEthernet 0/17-20
+ port-group 2 mode active
+ exit
+interface aggregateport 2
+ description LAG_TO_HPE_DL360_ESXI
+ switchport mode trunk
+ switchport trunk native vlan 5
+ switchport trunk allowed vlan only 5,30,100
+ exit
+show lacp neighbor</code></pre>
+          </article>
+        </div>
+      </section>
+
+      <section id="virtualization" class="manual-section panel p-5 sm:p-6">
+        <h2 class="text-2xl font-bold">Virtualization Host: HPE DL360 Gen 8</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Supports ESXi or Proxmox using a VLAN trunk from the Core Switch, with out-of-band management separated through iLO.</p>
+        <div class="mt-5 grid gap-5">
+          <article class="snippet" data-title="iLO Settings">
+            <div class="snippet-head"><span>ILO NETWORK SETTINGS</span><button class="copy-btn" data-copy-target="ilo-settings" type="button"><i data-lucide="copy"></i>Copy</button></div>
+            <pre id="ilo-settings"><code>IP Address:  192.168.5.10
+Subnet Mask: 255.255.255.0
+Gateway:     192.168.5.254
+DNS:         192.168.5.1
+Hostname:    bug-srv01-ilo
+Access URL:  https://192.168.5.10</code></pre>
+          </article>
+          <article class="snippet" data-title="ESXi Network Plan">
+            <div class="snippet-head"><span>ESXI / PROXMOX HOST PLAN</span><button class="copy-btn" data-copy-target="esxi-plan" type="button"><i data-lucide="copy"></i>Copy</button></div>
+            <pre id="esxi-plan"><code>Physical NICs:
+  vmnic0-3: LACP uplink to Ruijie AggregatePort 2
+
+Port Groups:
+  MGMT        VLAN 5    vmkernel / host management
+  SERVERS     VLAN 30   production virtual machines
+  DMZ         VLAN 100  reverse proxy / public services
+
+ESXi:
+  vSwitch or vDS uplink policy: Route based on IP hash when using LACP
+
+Proxmox:
+  Create Linux bond mode 802.3ad, then VLAN-aware bridge vmbr0</code></pre>
+          </article>
+        </div>
+      </section>
+
+      <section id="maintenance" class="manual-section panel p-5 sm:p-6">
+        <h2 class="text-2xl font-bold">Maintenance Log</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Record change windows, rollback steps, and owners so other engineers can continue operations safely.</p>
+        <div class="mt-5 overflow-x-auto">
+          <table class="w-full min-w-[760px] text-left text-sm">
+            <thead>
+              <tr class="border-b border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-950">
+                <th class="px-4 py-3">Date</th><th class="px-4 py-3">Change</th><th class="px-4 py-3">Device</th><th class="px-4 py-3">Owner</th><th class="px-4 py-3">Rollback</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+              <tr><td class="px-4 py-3">2026-04-29</td><td class="px-4 py-3">Initial manual build</td><td class="px-4 py-3">All</td><td class="px-4 py-3">Network Team</td><td class="px-4 py-3">Restore saved config</td></tr>
+              <tr><td class="px-4 py-3">YYYY-MM-DD</td><td class="px-4 py-3">Describe change here</td><td class="px-4 py-3">Device name</td><td class="px-4 py-3">Engineer</td><td class="px-4 py-3">Rollback command / backup file</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="ops" class="manual-section panel p-5 sm:p-6">
+        <h2 class="text-2xl font-bold">Backup / Verify / Rollback</h2>
+        <div class="mt-5 grid gap-5">
+          <article class="snippet" data-title="Verification Commands">
+            <div class="snippet-head"><span>VERIFY CHECKLIST</span><button class="copy-btn" data-copy-target="verify-commands" type="button"><i data-lucide="copy"></i>Copy</button></div>
+            <pre id="verify-commands"><code>FortiGate:
+  get system status
+  get router info routing-table all
+  diagnose vpn ssl list
+  execute ping 192.168.5.254
+
+Ruijie:
+  show vlan brief
+  show ip interface brief
+  show lacp neighbor
+  show ip route
+  ping 192.168.5.1
+
+Host:
+  ping 192.168.5.10
+  confirm ESXi/Proxmox port groups and VLAN tags</code></pre>
+          </article>
+          <article class="snippet" data-title="Rollback">
+            <div class="snippet-head"><span>ROLLBACK PLAN</span><button class="copy-btn" data-copy-target="rollback-plan" type="button"><i data-lucide="copy"></i>Copy</button></div>
+            <pre id="rollback-plan"><code>1. Keep pre-change backups from FortiGate and Ruijie.
+2. If LAG trunk fails, move one uplink to access VLAN 5 for emergency management.
+3. Restore firewall policy/routing from saved backup.
+4. Restore switch startup-config or remove new VLAN/LAG commands.
+5. Validate internet, SSL VPN, management IP, and server reachability.</code></pre>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="pointer-events-none fixed bottom-5 left-1/2 z-50 hidden -translate-x-1/2 rounded bg-slate-950 px-4 py-2 text-sm font-medium text-white shadow-lg dark:bg-cyan-600">Copied</div>
+
+  <script>
+    const root = document.documentElement;
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      root.classList.add('dark');
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.remove('hidden');
+      clearTimeout(window.toastTimer);
+      window.toastTimer = setTimeout(() => toast.classList.add('hidden'), 1600);
+    }
+
+    async function writeClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (error) {
+          // Fall back for browsers or embedded webviews that block Clipboard API.
+        }
+      }
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.setAttribute('readonly', '');
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.select();
+      const copied = document.execCommand('copy');
+      textarea.remove();
+      return copied;
+    }
+
+    async function copyText(targetId, button) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      const text = (target.textContent || target.innerText || '').trim();
+      const copied = await writeClipboard(text);
+      const label = button.querySelector('span') || button;
+      const previous = label.textContent;
+      label.textContent = copied ? 'Copied' : 'Failed';
+      showToast(copied ? 'Copied snippet to clipboard' : 'Clipboard permission blocked');
+      setTimeout(() => { label.textContent = previous; }, 1200);
+    }
+
+    document.addEventListener('click', async (event) => {
+      const copyButton = event.target.closest('.copy-btn');
+      if (copyButton) {
+        await copyText(copyButton.dataset.copyTarget, copyButton);
+      }
+    });
+
+    document.getElementById('themeToggle').addEventListener('click', async () => {
+      root.classList.toggle('dark');
+      localStorage.setItem('theme', root.classList.contains('dark') ? 'dark' : 'light');
+      if (window.refreshMermaid) await window.refreshMermaid();
+    });
+
+    document.getElementById('expandAll').addEventListener('click', () => {
+      document.querySelectorAll('.manual-section').forEach((section) => section.scrollIntoView({ block: 'nearest' }));
+      showToast('All sections are available in this single page');
+    });
+
+    document.querySelectorAll('.toc-link').forEach((link) => {
+      link.className = 'block rounded-lg border border-slate-800 bg-slate-900/40 px-4 py-3 text-slate-300 transition hover:border-slate-700 hover:bg-slate-800 hover:text-white';
+    });
+
+    document.querySelectorAll('.snippet').forEach((snippet) => {
+      snippet.className = 'snippet overflow-hidden rounded border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-950';
+      snippet.querySelector('.snippet-head').className = 'snippet-head flex items-center justify-between border-b border-slate-200 bg-white px-4 py-2 text-xs font-bold uppercase tracking-wider text-cyan-700 dark:border-slate-800 dark:bg-slate-900 dark:text-cyan-300';
+      snippet.querySelector('pre').className = 'overflow-x-auto p-4 text-sm leading-6 text-slate-800 dark:text-slate-100';
+      snippet.querySelectorAll('.copy-btn').forEach((btn) => {
+        btn.className = 'copy-btn inline-flex h-8 items-center gap-2 rounded border border-slate-200 px-3 text-xs font-semibold normal-case tracking-normal text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800';
+        const icon = btn.querySelector('i');
+        if (icon) icon.className = 'h-3.5 w-3.5';
+      });
+    });
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>
